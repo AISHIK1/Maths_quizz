@@ -14,12 +14,6 @@
       padding: 0;
     }
 
-    :root {
-      --bg: #020617;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-    }
-
     html, body {
       height: 100%;
     }
@@ -27,11 +21,11 @@
     body {
       font-family: "Space Grotesk", system-ui, sans-serif;
       background: radial-gradient(circle at top left, #1d1b4c 0, #020617 45%, #000 100%);
-      color: var(--text-main);
+      color: #f9fafb;
       overflow-x: hidden;
     }
 
-    /* ================= BACKGROUND ORBS ================= */
+    /* ===== Background orbs ===== */
     .bg-orbs {
       position: fixed;
       inset: 0;
@@ -43,14 +37,13 @@
       position: absolute;
       border-radius: 999px;
       filter: blur(40px);
-      opacity: 0.55;
-      mix-blend-mode: screen;
+      opacity: 0.6;
     }
 
     .orb1 {
       width: 380px;
       height: 380px;
-      background: rgba(56, 189, 248, 0.9);
+      background: rgba(56,189,248,0.8);
       top: -80px;
       left: -40px;
     }
@@ -58,7 +51,7 @@
     .orb2 {
       width: 420px;
       height: 420px;
-      background: rgba(251, 113, 133, 0.7);
+      background: rgba(251,113,133,0.6);
       bottom: -120px;
       right: -60px;
     }
@@ -66,79 +59,68 @@
     .orb3 {
       width: 260px;
       height: 260px;
-      background: rgba(161, 98, 255, 0.8);
+      background: rgba(161,98,255,0.7);
       top: 40%;
       left: 55%;
     }
 
-    /* ================= LAYOUT ================= */
-    main.app {
+    /* ===== Layout ===== */
+    main {
       position: relative;
       z-index: 1;
       max-width: 960px;
-      margin: 0 auto;
+      margin: auto;
       min-height: 100vh;
-      padding: 24px;
+      padding: 32px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 20px;
+      gap: 24px;
     }
 
-    .app-header {
-      max-width: 600px;
-    }
-
-    .app-title {
+    h1 {
       font-size: 2.6rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
     }
 
-    .app-subtitle {
-      margin-top: 8px;
+    p.subtitle {
+      color: #9ca3af;
       font-size: 1.05rem;
-      color: var(--text-muted);
     }
 
-    /* ================= SCREEN FIX (IMPORTANT) ================= */
+    /* ===== Screens ===== */
     .screen {
       display: none;
       margin-top: 24px;
-      padding: 22px;
+      padding: 24px;
       border-radius: 22px;
-
       background:
-        radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), transparent 55%),
-        radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.96), transparent 55%),
-        linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(3, 7, 18, 0.98));
-
-      box-shadow:
-        0 0 0 1px rgba(148, 163, 184, 0.4),
-        0 22px 60px rgba(15, 23, 42, 0.9);
-
-      border: 1px solid rgba(94, 234, 212, 0.3);
+        radial-gradient(circle at top left, rgba(15,23,42,0.95), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(15,23,42,0.95), transparent 55%),
+        linear-gradient(135deg, rgba(15,23,42,0.95), rgba(3,7,18,0.98));
+      border: 1px solid rgba(94,234,212,0.3);
+      box-shadow: 0 22px 60px rgba(15,23,42,0.9);
     }
 
     .screen.active {
       display: block;
     }
 
-    /* ================= BUTTONS ================= */
+    /* ===== Buttons ===== */
     .btn {
       border: none;
       cursor: pointer;
-      font-family: inherit;
       border-radius: 999px;
-      padding: 0.7rem 1.6rem;
+      padding: 0.75rem 1.6rem;
       font-weight: 600;
       font-size: 0.9rem;
+      font-family: inherit;
     }
 
     .btn-primary {
       background: linear-gradient(120deg, #06b6d4, #6366f1, #ec4899);
       color: #020617;
-      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.6);
+      box-shadow: 0 12px 32px rgba(99,102,241,0.6);
     }
 
     .btn-primary:hover {
@@ -155,37 +137,66 @@
     <div class="orb orb3"></div>
   </div>
 
-  <main class="app">
-
-    <header class="app-header">
-      <h1 class="app-title">Neon Math Quiz Arena</h1>
-      <p class="app-subtitle">
+  <main>
+    <header>
+      <h1>Neon Math Quiz Arena</h1>
+      <p class="subtitle">
         20 questions of fast mental math: multiplication tables, squares and cubes.
       </p>
     </header>
 
-    <!-- INTRO SCREEN -->
+    <!-- INTRO -->
     <section id="intro-screen" class="screen active">
-      <p style="margin-bottom:16px; color:#cbd5f5;">
+      <p style="margin-bottom:16px;">
         You will solve 10 multiplication questions and 10 square & cube questions.
       </p>
 
       <button id="start-btn" class="btn btn-primary">
-        Start quiz — go fullscreen
+        Start Quiz — Go Fullscreen
       </button>
     </section>
 
-    <!-- QUIZ SCREEN -->
+    <!-- QUIZ -->
     <section id="quiz-screen" class="screen">
-      Quiz screen (hidden until start)
+      <h2>Quiz Started</h2>
+      <p>This is where your quiz logic will run.</p>
     </section>
 
-    <!-- RESULT SCREEN -->
+    <!-- RESULT -->
     <section id="result-screen" class="screen">
       Result screen
     </section>
-
   </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const intro = document.getElementById("intro-screen");
+      const quiz = document.getElementById("quiz-screen");
+      const result = document.getElementById("result-screen");
+      const startBtn = document.getElementById("start-btn");
+
+      function show(screen) {
+        intro.classList.remove("active");
+        quiz.classList.remove("active");
+        result.classList.remove("active");
+        screen.classList.add("active");
+      }
+
+      function requestFullscreen() {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => {});
+        }
+      }
+
+      startBtn.addEventListener("click", () => {
+        requestFullscreen();
+        show(quiz);
+      });
+    })();
+  </script>
 
 </body>
 </html>
