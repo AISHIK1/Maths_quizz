@@ -1,204 +1,259 @@
-<script>
-(function () {
-  "use strict";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Neon Math Quiz Arena</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  /* ================= CONFIG ================= */
-  const TOTAL_MULTIPLICATION = 10;
-  const TOTAL_POWERS = 10;
-  const QUESTION_TIME = 60; // seconds per question
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 
-  /* ============ HOURLY SEEDED RANDOM ============ */
-  const HOUR_SEED = Math.floor(Date.now() / (1000 * 60 * 60));
-  let seed = HOUR_SEED;
+  <style>
+    /* ===================== ROOT & RESET ===================== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  function seededRandom() {
-    seed++;
-    return Math.abs(Math.sin(seed) * 10000) % 1;
-  }
+    :root {
+      --bg-main: #020617;
+      --card-bg: rgba(15, 23, 42, 0.95);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
 
-  function randInt(min, max) {
-    return Math.floor(seededRandom() * (max - min + 1)) + min;
-  }
-
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+      --cyan: #22d3ee;
+      --pink: #fb37ff;
+      --purple: #8b5cff;
+      --green: #4ade80;
+      --red: #fb7185;
     }
-    return arr;
-  }
 
-  /* ================= DOM ================= */
-  const intro = document.getElementById("intro-screen");
-  const quiz = document.getElementById("quiz-screen");
-  const result = document.getElementById("result-screen");
-
-  const startBtn = document.getElementById("start-btn");
-  const prevBtn = document.getElementById("prev-btn");
-  const nextBtn = document.getElementById("next-btn");
-  const submitBtn = document.getElementById("submit-btn");
-
-  const questionText = document.getElementById("question-text");
-  const optionsContainer = document.getElementById("options-container");
-  const progressText = document.getElementById("progress-text");
-  const progressFill = document.getElementById("progress-fill");
-  const timerEl = document.getElementById("question-timer");
-
-  const scoreMain = document.getElementById("score-main");
-  const scorePercent = document.getElementById("score-percent");
-  const scoreFill = document.getElementById("score-fill");
-  const resultList = document.getElementById("result-list");
-
-  /* ================= STATE ================= */
-  let questions = [];
-  let answers = [];
-  let index = 0;
-  let timer = null;
-  let timeLeft = QUESTION_TIME;
-
-  /* ================= FULLSCREEN ================= */
-  function requestFullscreen() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-    if (screen.orientation?.lock) {
-      screen.orientation.lock("landscape").catch(() => {});
+    html, body {
+      height: 100%;
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background: radial-gradient(circle at top left, #1d1b4c, #020617 45%, #000);
+      color: var(--text-main);
     }
-  }
 
-  /* ================= SECURITY ================= */
-  document.addEventListener("contextmenu", e => e.preventDefault());
-  document.addEventListener("keydown", e => {
-    const k = e.key.toLowerCase();
-    if ((e.ctrlKey || e.metaKey) && ["t","n","w","r","p"].includes(k)) e.preventDefault();
-    if (["f5","f11"].includes(k)) e.preventDefault();
-  });
-
-  /* ================= QUESTIONS ================= */
-  function genMultiplication() {
-    const q = [];
-    while (q.length < TOTAL_MULTIPLICATION) {
-      const a = randInt(12, 25);
-      const b = randInt(1, 20);
-      q.push({
-        textHTML: `What is <span class="math">${a} × ${b}</span>?`,
-        correct: a * b,
-        options: shuffle([
-          a * b,
-          a * b + randInt(1, 10),
-          a * b - randInt(1, 10),
-          a * b + randInt(11, 20),
-        ]),
-      });
+    /* ===================== BACKGROUND EFFECTS ===================== */
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.55;
+      mix-blend-mode: screen;
     }
-    return q;
-  }
+    .orb.cyan { width: 380px; height: 380px; background: var(--cyan); top: -80px; left: -40px; }
+    .orb.pink { width: 420px; height: 420px; background: var(--red); bottom: -120px; right: -60px; }
+    .orb.purple { width: 260px; height: 260px; background: var(--purple); top: 40%; left: 55%; }
 
-  function genPowers() {
-    const q = [];
-    while (q.length < TOTAL_POWERS) {
-      const n = randInt(10, 30);
-      const p = seededRandom() < 0.5 ? 2 : 3;
-      const c = n ** p;
-      q.push({
-        textHTML: `What is <span class="math">${n}<sup>${p}</sup></span>?`,
-        correct: c,
-        options: shuffle([
-          c,
-          c + randInt(10, 50),
-          c - randInt(10, 50),
-          c + randInt(51, 120),
-        ]),
-      });
+    /* ===================== LAYOUT ===================== */
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
     }
-    return q;
-  }
 
-  /* ================= TIMER ================= */
-  function startTimer() {
-    clearInterval(timer);
-    timeLeft = QUESTION_TIME;
-    timerEl.innerHTML = `Time left: <strong>${timeLeft}s</strong>`;
+    header {
+      text-align: center;
+    }
 
-    timer = setInterval(() => {
-      timeLeft--;
-      timerEl.innerHTML = `Time left: <strong>${timeLeft}s</strong>`;
-      if (timeLeft <= 0) {
-        clearInterval(timer);
-        if (index < questions.length - 1) {
-          index++;
-          render();
-        } else {
-          submit();
-        }
+    h1 {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      background: linear-gradient(120deg, #fff, #a5f3fc, #a855f7);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    /* ===================== SCREENS ===================== */
+    .screen {
+      display: none;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* ===================== BUTTONS ===================== */
+    .btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 0.7rem 1.4rem;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: linear-gradient(120deg, #06b6d4, #6366f1, #ec4899);
+      color: #020617;
+    }
+
+    .btn-secondary {
+      background: #020617;
+      color: #fff;
+      border: 1px solid #94a3b8;
+    }
+
+    /* ===================== QUIZ ===================== */
+    .options {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .option {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #020617;
+      border: 1px solid #94a3b8;
+      cursor: pointer;
+    }
+
+    .option.selected {
+      background: linear-gradient(120deg, #22c55e, #22d3ee, #6366f1);
+      color: #020617;
+    }
+
+    /* ===================== RESULTS ===================== */
+    .result-item {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: #020617;
+      border: 1px solid #1e40af;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background -->
+  <div class="bg-orbs">
+    <div class="orb cyan"></div>
+    <div class="orb pink"></div>
+    <div class="orb purple"></div>
+  </div>
+
+  <main>
+    <header>
+      <h1>Neon Math Quiz Arena</h1>
+      <p>20 questions · Multiplication · Squares · Cubes</p>
+    </header>
+
+    <!-- INTRO -->
+    <section id="intro" class="screen active">
+      <p>10 multiplication + 10 square/cube questions.</p>
+      <button id="startBtn" class="btn btn-primary">Start Quiz</button>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="quiz" class="screen">
+      <p id="progress"></p>
+      <h2 id="question"></h2>
+      <div id="options" class="options"></div>
+      <button id="nextBtn" class="btn btn-secondary">Next</button>
+    </section>
+
+    <!-- RESULT -->
+    <section id="result" class="screen">
+      <h2 id="score"></h2>
+      <div id="resultList"></div>
+      <button id="restartBtn" class="btn btn-primary">Restart</button>
+    </section>
+  </main>
+
+  <script>
+    /* ===================== STATE ===================== */
+    const TOTAL_Q = 20;
+    let questions = [];
+    let answers = [];
+    let index = 0;
+
+    const screens = {
+      intro: document.getElementById("intro"),
+      quiz: document.getElementById("quiz"),
+      result: document.getElementById("result")
+    };
+
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const progressEl = document.getElementById("progress");
+    const scoreEl = document.getElementById("score");
+    const resultList = document.getElementById("resultList");
+
+    /* ===================== HELPERS ===================== */
+    const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    function show(screen) {
+      Object.values(screens).forEach(s => s.classList.remove("active"));
+      screens[screen].classList.add("active");
+    }
+
+    function generateQuestion() {
+      if (Math.random() < 0.5) {
+        const a = rand(12, 25), b = rand(1, 20);
+        return { text: `${a} × ${b}`, answer: a * b };
+      } else {
+        const n = rand(10, 30);
+        const isSquare = Math.random() < 0.5;
+        return { text: isSquare ? `${n}²` : `${n}³`, answer: n ** (isSquare ? 2 : 3) };
       }
-    }, 1000);
-  }
+    }
 
-  /* ================= RENDER ================= */
-  function render() {
-    const q = questions[index];
-    progressText.textContent = `Question ${index + 1} / ${questions.length}`;
-    progressFill.style.width = ((index + 1) / questions.length) * 100 + "%";
+    function startQuiz() {
+      questions = Array.from({ length: TOTAL_Q }, generateQuestion);
+      answers = Array(TOTAL_Q).fill(null);
+      index = 0;
+      render();
+      show("quiz");
+    }
 
-    questionText.innerHTML = q.textHTML;
-    optionsContainer.innerHTML = "";
+    function render() {
+      const q = questions[index];
+      progressEl.textContent = `Question ${index + 1} / ${TOTAL_Q}`;
+      questionEl.textContent = q.text;
+      optionsEl.innerHTML = "";
 
-    q.options.forEach(opt => {
-      const btn = document.createElement("button");
-      btn.className = "btn option-btn";
-      btn.textContent = opt;
-      if (answers[index] === opt) btn.classList.add("selected");
-      btn.onclick = () => {
-        answers[index] = opt;
-        [...optionsContainer.children].forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-      };
-      optionsContainer.appendChild(btn);
-    });
+      const opts = new Set([q.answer]);
+      while (opts.size < 4) opts.add(q.answer + rand(-20, 20));
 
-    prevBtn.disabled = index === 0;
-    nextBtn.style.display = index === questions.length - 1 ? "none" : "inline-flex";
-    submitBtn.style.display = index === questions.length - 1 ? "inline-flex" : "none";
+      [...opts].forEach(v => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = v;
+        btn.onclick = () => {
+          answers[index] = v;
+          document.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+        optionsEl.appendChild(btn);
+      });
+    }
 
-    startTimer();
-  }
+    function finishQuiz() {
+      const score = answers.filter((a, i) => a === questions[i].answer).length;
+      scoreEl.textContent = `Score: ${score} / ${TOTAL_Q}`;
+      resultList.innerHTML = "";
+      show("result");
+    }
 
-  /* ================= SUBMIT ================= */
-  function submit() {
-    clearInterval(timer);
-    let score = 0;
-    resultList.innerHTML = "";
-
-    questions.forEach((q, i) => {
-      if (answers[i] === q.correct) score++;
-      const div = document.createElement("div");
-      div.className = "result-item";
-      div.innerHTML = `${q.textHTML} — Your: ${answers[i] ?? "—"} | Correct: ${q.correct}`;
-      resultList.appendChild(div);
-    });
-
-    const percent = Math.round((score / questions.length) * 100);
-    scoreMain.textContent = `${score} / ${questions.length}`;
-    scorePercent.textContent = `(${percent}%)`;
-    scoreFill.style.width = percent + "%";
-
-    quiz.classList.remove("active");
-    result.classList.add("active");
-  }
-
-  /* ================= START ================= */
-  startBtn.onclick = () => {
-    requestFullscreen();
-    questions = shuffle(genMultiplication().concat(genPowers()));
-    answers = new Array(questions.length).fill(null);
-    index = 0;
-    intro.classList.remove("active");
-    quiz.classList.add("active");
-    render();
-  };
-
-  prevBtn.onclick = () => { if (index > 0) { index--; render(); } };
-  nextBtn.onclick = () => { if (index < questions.length - 1) { index++; render(); } };
-  submitBtn.onclick = submit;
-})();
-</script>
+    /* ===================== EVENTS ===================== */
+    startBtn.onclick = startQuiz;
+    nextBtn.onclick = () => index < TOTAL_Q - 1 ? (index++, render()) : finishQuiz();
+    restartBtn.onclick = () => show("intro");
+  </script>
+</body>
+</html>
