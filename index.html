@@ -1,158 +1,879 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Neon Math Quiz Arena</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Neon Math Quiz</title>
+  <meta name="theme-color" content="#0b1020" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0a0f1f',
+            glass: 'rgba(255,255,255,0.07)',
+            neon1: '#00E5FF',
+            neon2: '#7C3AED',
+            neon3: '#00FFA3',
+            neon4: '#FF3D81',
+          },
+          fontFamily: {
+            display: ['Outfit', 'ui-sans-serif', 'system-ui'],
+          },
+          boxShadow: {
+            neon: '0 0 0 1px rgba(124,58,237,.35), 0 0 40px rgba(124,58,237,.25), inset 0 0 20px rgba(124,58,237,.2)',
+            neonCyan: '0 0 0 1px rgba(0,229,255,.35), 0 0 40px rgba(0,229,255,.25), inset 0 0 20px rgba(0,229,255,.2)',
+            neonGreen: '0 0 0 1px rgba(0,255,163,.35), 0 0 40px rgba(0,255,163,.25), inset 0 0 20px rgba(0,255,163,.2)',
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     :root {
-      --bg: #020617;
-      --accent-cyan: #22d3ee;
-      --accent-pink: #fb37ff;
-      --accent-purple: #8b5cff;
-      --accent-green: #4ade80;
-      --accent-red: #fb7185;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
+      --bg: #0a0f1f;
+      --card: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.16);
+      --neon1: #00E5FF;
+      --neon2: #7C3AED;
+      --neon3: #00FFA3;
+      --neon4: #FF3D81;
     }
-
-    html, body {
-      height: 100%;
-    }
-
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-      font-family: "Space Grotesk", system-ui, sans-serif;
-      background: radial-gradient(circle at top left, #1d1b4c 0, #020617 45%, #000 100%);
-      color: var(--text-main);
+      margin: 0;
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,0.15), transparent 60%),
+                  radial-gradient(1000px 700px at 90% 20%, rgba(0,229,255,0.14), transparent 60%),
+                  radial-gradient(800px 600px at 70% 90%, rgba(0,255,163,0.12), transparent 60%),
+                  var(--bg);
+      color: #EAF2FF;
+      font-family: Outfit, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       overflow-x: hidden;
     }
-
-    /* BACKGROUND */
-    .bg-orbs {
+    .grain {
       position: fixed;
-      inset: 0;
       pointer-events: none;
+      inset: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 600"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.05"/></svg>');
+      opacity: .18;
+      mix-blend-mode: soft-light;
       z-index: 0;
     }
-
     .orb {
-      position: absolute;
-      border-radius: 999px;
-      filter: blur(40px);
-      opacity: 0.55;
-      mix-blend-mode: screen;
+      position: fixed;
+      filter: blur(60px);
+      opacity: .4;
+      z-index: 0;
+      animation: float 16s ease-in-out infinite;
     }
-
-    .orb1 {
-      width: 380px;
-      height: 380px;
-      background: rgba(56, 189, 248, 0.8);
-      top: -80px;
-      left: -40px;
+    .orb.cyan { background: radial-gradient(circle at center, rgba(0,229,255,.6), transparent 60%); width: 36vmax; height: 36vmax; left: -10vmax; top: 10vmax; animation-duration: 18s; }
+    .orb.violet { background: radial-gradient(circle at center, rgba(124,58,237,.6), transparent 60%); width: 40vmax; height: 40vmax; right: -10vmax; top: -6vmax; }
+    .orb.green { background: radial-gradient(circle at center, rgba(0,255,163,.55), transparent 60%); width: 30vmax; height: 30vmax; right: 10vmax; bottom: -10vmax; animation-duration: 22s; }
+    @keyframes float {
+      0%, 100% { transform: translate3d(0,0,0) scale(1); }
+      50% { transform: translate3d(2rem,-1rem,0) scale(1.05); }
     }
-
-    .orb2 {
-      width: 420px;
-      height: 420px;
-      background: rgba(251, 113, 133, 0.6);
-      bottom: -120px;
-      right: -60px;
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
     }
-
-    .orb3 {
-      width: 260px;
-      height: 260px;
-      background: rgba(161, 98, 255, 0.7);
-      top: 40%;
-      left: 55%;
-    }
-
-    /* LAYOUT */
-    main.app {
+    .neon-border {
       position: relative;
-      z-index: 1;
-      max-width: 960px;
-      margin: 0 auto;
-      min-height: 100vh;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 18px;
     }
-
-    .app-header {
-      text-align: left;
+    .neon-border::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 16px;
+      padding: 1px;
+      background: linear-gradient(90deg, rgba(124,58,237,.7), rgba(0,229,255,.7), rgba(0,255,163,.7));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      pointer-events: none;
+      opacity: .5;
+      filter: drop-shadow(0 0 12px rgba(124,58,237,.35));
     }
-
-    .app-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: white;
+    .glow {
+      box-shadow: 0 0 0 1px rgba(124,58,237,.35), 0 0 24px rgba(124,58,237,.25), inset 0 0 16px rgba(124,58,237,.16);
     }
-
-    .app-subtitle {
-      margin-top: 6px;
-      font-size: 1.1rem;
-      color: var(--text-muted);
+    .btn-neon {
+      background: linear-gradient(135deg, rgba(124,58,237,.85), rgba(0,229,255,.85));
+      color: white; border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px; padding: .85rem 1.2rem; font-weight: 700;
+      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+      box-shadow: 0 0 0 1px rgba(124,58,237,.4), 0 10px 30px rgba(0,229,255,.22), inset 0 0 12px rgba(255,255,255,.12);
     }
-
-    /* SCREENS */
-    .screen {
-      display: none;
-      margin-top: 20px;
+    .btn-neon:hover { filter: brightness(1.1); box-shadow: 0 0 0 1px rgba(0,229,255,.5), 0 20px 40px rgba(124,58,237,.35), inset 0 0 16px rgba(255,255,255,.16); }
+    .btn-neon:active { transform: translateY(1px) scale(.99); }
+    .badge {
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      padding: .35rem .6rem; border-radius: 999px; font-weight: 600; font-size: .8rem;
+      box-shadow: inset 0 0 8px rgba(255,255,255,.06);
     }
-
-    .screen.active {
-      display: block;
+    .option {
+      cursor: pointer;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25), inset 0 0 10px rgba(255,255,255,.05);
+      user-select: none;
     }
+    .option:hover { border-color: rgba(0,229,255,.5); box-shadow: 0 0 0 1px rgba(0,229,255,.35), 0 10px 30px rgba(0,229,255,.15), inset 0 0 14px rgba(0,229,255,.12); background: linear-gradient(180deg, rgba(0,229,255,.06), rgba(255,255,255,.02)); }
+    .option:active { transform: translateY(1px) scale(.995); }
+    .option.correct { border-color: rgba(0,255,163,.75)!important; box-shadow: 0 0 0 1px rgba(0,255,163,.5), 0 10px 30px rgba(0,255,163,.18), inset 0 0 16px rgba(0,255,163,.18)!important; }
+    .option.wrong { border-color: rgba(255,61,129,.7)!important; box-shadow: 0 0 0 1px rgba(255,61,129,.5), 0 10px 30px rgba(255,61,129,.18), inset 0 0 16px rgba(255,61,129,.18)!important; }
+    .progress {
+      height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+      overflow: hidden; box-shadow: inset 0 0 10px rgba(255,255,255,.06);
+    }
+    .progress > span {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, rgba(124,58,237,1), rgba(0,229,255,1), rgba(0,255,163,1));
+      box-shadow: 0 0 18px rgba(124,58,237,.45);
+      width: 0%;
+      transition: width .3s ease;
+    }
+    .ring {
+      --value: 1; /* 1.0 = full, 0 = empty */
+      width: 82px; height: 82px; border-radius: 50%;
+      background: conic-gradient(#FF3D81 calc(360deg*(1 - var(--value))), #00FFA3 0);
+      padding: 3px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 0 24px rgba(124,58,237,.25), inset 0 0 16px rgba(255,255,255,.12);
+    }
+    .ring-inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      display: grid; place-items: center;
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .ring-digit { font-weight: 800; font-size: 1.25rem; letter-spacing: 1px; color: #EAF6FF; text-shadow: 0 0 10px rgba(0,229,255,.4); }
+    .header-blur {
+      background: linear-gradient(180deg, rgba(10,15,31,.9), rgba(10,15,31,.65));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .start-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: radial-gradient(1000px 600px at 10% 20%, rgba(124,58,237,.18), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 80%, rgba(0,229,255,.18), transparent 60%),
+                  rgba(10,15,31,.9);
+      display: grid; place-items: center;
+    }
+    .flicker {
+      text-shadow: 0 0 20px rgba(124,58,237,.65), 0 0 40px rgba(0,229,255,.35);
+      animation: flick 5s ease-in-out infinite;
+    }
+    @keyframes flick {
+      0%, 19%, 21%, 23%, 100% { opacity: 1; }
+      20%, 22% { opacity: .4; }
+    }
+    .no-select { -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+    .chart-card svg { width: 100%; height: 100%; display: block; }
+    .scroll-snap { scroll-snap-type: y mandatory; }
+    .hidden-important { display: none !important; }
   </style>
 </head>
+<body class="antialiased">
+  <div class="grain"></div>
+  <div class="orb cyan"></div>
+  <div class="orb violet"></div>
+  <div class="orb green"></div>
 
-<body>
+  <header class="header-blur fixed top-0 inset-x-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-neon2 to-neon1 flex items-center justify-center shadow-neon">
+            <span class="font-extrabold text-white">MQ</span>
+          </div>
+          <div class="leading-tight">
+            <div class="text-lg sm:text-xl font-extrabold tracking-wide flicker">Neon Math Quiz</div>
+            <div class="text-xs opacity-70 -mt-0.5">Fast • Focused • Fun</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="fullscreenStatus" class="badge hidden sm:flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-neon3 shadow-[0_0_10px_#00FFA3]"></span>
+            <span class="hidden sm:inline">Fullscreen</span>
+          </div>
+          <div class="badge flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" class="opacity-80"><path fill="currentColor" d="M3 12a9 9 0 1 1 18 0a9 9 0 0 1-18 0m10-8.94V4h-2V3.06A7.95 7.95 0 0 0 5.06 7H6v2H5.06A7.95 7.95 0 0 0 10 20.94V20h2v.94A7.95 7.95 0 0 0 18.94 17H18v-2h.94A7.95 7.95 0 0 0 14 3.06M12 8a1 1 0 0 1 1 1v2.26l1.74 1a1 1 0 0 1-1 1.74l-2.27-1.31A1 1 0 0 1 11 11v-2a1 1 0 0 1 1-1"/></svg>
+            <span id="overallTimerText" class="tabular-nums font-extrabold">20:00</span>
+          </div>
+          <button id="goFullscreenBtn" class="btn-neon text-xs hidden sm:block">Go Fullscreen</button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <div class="bg-orbs">
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="orb orb3"></div>
-  </div>
-
-  <main class="app">
-
-    <header class="app-header">
-      <h1 class="app-title">Neon Math Quiz Arena</h1>
-      <p class="app-subtitle">
-        20 questions of fast mental math: multiplication tables, squares and cubes.
-      </p>
-    </header>
-
-    <!-- INTRO SCREEN -->
-    <section id="intro-screen" class="screen active">
-      <p style="margin-top:20px; color:#cbd5f5;">
-        You will solve 10 multiplication questions and 10 square & cube questions.
-      </p>
+  <main class="relative pt-20 sm:pt-24">
+    <section id="startOverlay" class="start-overlay">
+      <div class="max-w-3xl mx-auto px-6">
+        <div class="glass neon-border p-6 sm:p-8 text-center space-y-6 shadow-neon">
+          <div class="text-3xl sm:text-4xl font-extrabold">Ready to power up your brain?</div>
+          <p class="text-sm sm:text-base opacity-80 leading-relaxed">
+            20 questions • 60 seconds each • No going back • Auto-submit at 20 minutes.
+          </p>
+          <div class="grid sm:grid-cols-3 gap-3 text-left">
+            <div class="glass p-4 rounded-xl">
+              <div class="text-sm opacity-75">Section 1</div>
+              <div class="font-bold text-lg">Multiplication</div>
+              <div class="text-xs opacity-70">Tables 12–25 × 1–20 (10 questions)</div>
+            </div>
+            <div class="glass p-4 rounded-xl">
+              <div class="text-sm opacity-75">Section 2</div>
+              <div class="font-bold text-lg">Squares & Cubes</div>
+              <div class="text-xs opacity-70">10²–30² & 10³–30³ (10 questions)</div>
+            </div>
+            <div class="glass p-4 rounded-xl">
+              <div class="text-sm opacity-75">Rules</div>
+              <div class="text-xs opacity-70">• Forced fullscreen • New tabs blocked • Mobile-friendly</div>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button id="startBtn" class="btn-neon text-base sm:text-lg px-6 py-3">Start Quiz • Enter Fullscreen</button>
+            <div class="text-xs opacity-70">Best viewed in fullscreen. Keyboard: 1–4 selects answers.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- QUIZ SCREEN -->
-    <section id="quiz-screen" class="screen">
-      Quiz screen
+    <section id="quizView" class="max-w-5xl mx-auto px-4 sm:px-6 hidden">
+      <div class="glass neon-border p-4 sm:p-6 md:p-8 shadow-neon">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div class="flex items-center gap-3">
+            <div id="qRing" class="ring"><div class="ring-inner"><div id="qTimer" class="ring-digit tabular-nums">60</div></div></div>
+            <div>
+              <div class="text-xs opacity-70">Question <span id="qIndexText">1</span> / 20</div>
+              <div id="sectionBadge" class="badge mt-1 inline-flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-neon2 shadow-[0_0_8px_#7C3AED]"></span>
+                <span id="sectionText">Multiplication</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-full sm:w-2/3 md:w-1/2">
+            <div class="progress"><span id="progressBar"></span></div>
+            <div class="flex justify-between text-[10px] opacity-70 mt-1">
+              <span>0%</span><span id="progressPct">5%</span><span>100%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass p-4 sm:p-6 rounded-2xl mb-6">
+          <div id="questionText" class="text-2xl sm:text-3xl font-extrabold leading-snug"></div>
+        </div>
+
+        <div id="optionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"></div>
+
+        <div class="mt-6 flex items-center justify-between">
+          <div class="text-xs sm:text-sm opacity-70">Auto-next after 60s • Auto-submit at 20:00</div>
+          <button id="submitBtn" class="btn-neon">Submit & Finish</button>
+        </div>
+      </div>
+      <div class="text-center text-xs opacity-50 mt-4">Stay focused—new tabs and certain shortcuts are disabled during the quiz.</div>
     </section>
 
-    <!-- RESULT SCREEN -->
-    <section id="result-screen" class="screen">
-      Result screen
+    <section id="resultView" class="max-w-6xl mx-auto px-4 sm:px-6 hidden">
+      <div class="glass neon-border p-5 sm:p-8 shadow-neon">
+        <div class="flex flex-col lg:flex-row gap-6">
+          <div class="lg:w-1/3">
+            <div class="glass p-5 rounded-2xl h-full flex flex-col justify-between">
+              <div>
+                <div class="text-2xl sm:text-3xl font-extrabold mb-1">Your Score</div>
+                <div class="text-sm opacity-70 mb-6">Neon Math Quiz Results</div>
+                <div class="flex items-end gap-3">
+                  <div class="text-5xl font-extrabold"><span id="scoreValue">0</span><span class="text-2xl opacity-70">/20</span></div>
+                  <div id="scoreBadge" class="badge">—</div>
+                </div>
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                  <div class="glass p-4 rounded-xl">
+                    <div class="text-xs opacity-70">Correct</div>
+                    <div class="text-2xl font-extrabold text-[color:var(--neon3)]"><span id="correctCount">0</span></div>
+                  </div>
+                  <div class="glass p-4 rounded-xl">
+                    <div class="text-xs opacity-70">Wrong / Skipped</div>
+                    <div class="text-2xl font-extrabold text-[color:var(--neon4)]"><span id="wrongCount">0</span></div>
+                  </div>
+                  <div class="glass p-4 rounded-xl">
+                    <div class="text-xs opacity-70">Avg. Time</div>
+                    <div class="text-2xl font-extrabold"><span id="avgTime">0.0</span><span class="text-base opacity-70">s</span></div>
+                  </div>
+                  <div class="glass p-4 rounded-xl">
+                    <div class="text-xs opacity-70">Total Time</div>
+                    <div class="text-2xl font-extrabold"><span id="totalTime">0:00</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 mt-6">
+                <button id="retryBtn" class="btn-neon">Retry Quiz</button>
+                <button id="fullscreenAgainBtn" class="badge">Go Fullscreen</button>
+              </div>
+            </div>
+          </div>
+          <div class="lg:w-2/3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass p-5 rounded-2xl chart-card h-[320px] sm:h-[360px]">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-bold">Time per Question</div>
+                <div class="badge text-xs">Line Chart</div>
+              </div>
+              <div id="timeChart" class="w-full h-[270px] sm:h-[300px]"></div>
+            </div>
+            <div class="glass p-5 rounded-2xl chart-card h-[320px] sm:h-[360px]">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-bold">Accuracy</div>
+                <div class="badge text-xs">Donut</div>
+              </div>
+              <div id="accChart" class="w-full h-[270px] sm:h-[300px]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center text-xs opacity-50 mt-4">Great work! Stay in fullscreen for the best experience.</div>
     </section>
-
   </main>
 
+  <script>
+    // Utility
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const formatNum = (n) => n.toLocaleString('en-IN'); // sleek Indian-style grouping ok for large numbers
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    // Fullscreen helpers
+    const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    const requestFS = async () => {
+      const el = document.documentElement;
+      try {
+        if (el.requestFullscreen) await el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+      } catch (e) { /* ignore */ }
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('portrait-primary').catch(()=>{});
+        }
+      } catch(e) {}
+      updateFSIndicator();
+    };
+    const exitFS = async () => {
+      try {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+      } catch(e) {}
+      updateFSIndicator();
+    };
+    const updateFSIndicator = () => {
+      const fs = $('#fullscreenStatus');
+      if (isFullscreen()) {
+        fs.classList.remove('hidden');
+        fs.querySelector('span').nextSibling;
+      } else {
+        fs.classList.remove('hidden');
+      }
+    };
+
+    // New tab & navigation restrictions
+    window.open = () => null;
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+    }, true);
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && ['t','n','w','r','p','l'].includes(k)) { e.preventDefault(); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['t','n'].includes(k)) { e.preventDefault(); }
+      if (e.key === 'F11') { e.preventDefault(); }
+      // Prevent backspace navigating back
+      if (e.key === 'Backspace' && !['input','textarea'].includes((e.target.tagName||'').toLowerCase())) { e.preventDefault(); }
+    });
+    // Trap back navigation inside SPA
+    history.pushState(null, '', location.href);
+    window.addEventListener('popstate', function () {
+      history.pushState(null, '', location.href);
+    });
+    window.addEventListener('beforeunload', function (e) {
+      e.preventDefault();
+      e.returnValue = '';
+    });
+
+    // Quiz state
+    const TOTAL_QUESTIONS = 20;
+    const PER_Q_SECONDS = 60;
+    const TOTAL_SECONDS = TOTAL_QUESTIONS * PER_Q_SECONDS;
+
+    let questions = [];
+    let currentIndex = 0;
+    let perQInterval = null;
+    let quizInterval = null;
+    let questionStart = 0; // ms
+    let quizStart = 0; // ms
+    let totalElapsed = 0; // seconds
+
+    // Elements
+    const startOverlay = $('#startOverlay');
+    const quizView = $('#quizView');
+    const resultView = $('#resultView');
+    const startBtn = $('#startBtn');
+    const submitBtn = $('#submitBtn');
+    const retryBtn = $('#retryBtn');
+    const goFSBtn = $('#goFullscreenBtn');
+    const fsAgainBtn = $('#fullscreenAgainBtn');
+
+    const qTimer = $('#qTimer');
+    const qRing = $('#qRing');
+    const overallTimerText = $('#overallTimerText');
+    const qIndexText = $('#qIndexText');
+    const sectionText = $('#sectionText');
+    const progressBar = $('#progressBar');
+    const progressPct = $('#progressPct');
+    const questionText = $('#questionText');
+    const optionsGrid = $('#optionsGrid');
+
+    const scoreValue = $('#scoreValue');
+    const scoreBadge = $('#scoreBadge');
+    const correctCountEl = $('#correctCount');
+    const wrongCountEl = $('#wrongCount');
+    const avgTimeEl = $('#avgTime');
+    const totalTimeEl = $('#totalTime');
+
+    function genMultiplicationQuestions(count) {
+      const set = new Set();
+      const list = [];
+      while (list.length < count) {
+        const a = randInt(12,25);
+        const b = randInt(1,20);
+        const key = `${a}x${b}`;
+        if (set.has(key)) continue;
+        set.add(key);
+        const answer = a*b;
+
+        // create distractors
+        const cand = new Set([answer]);
+        const near = [];
+        if (b+1 <= 20) near.push(a*(b+1));
+        if (b-1 >= 1) near.push(a*(b-1));
+        if (a+1 <= 25) near.push((a+1)*b);
+        if (a-1 >= 12) near.push((a-1)*b);
+        near.forEach(v => cand.add(v));
+
+        while (cand.size < 4) {
+          const deltas = [a, b, 5, 10, randInt(2, 15)];
+          const sign = Math.random() < 0.5 ? -1 : 1;
+          const delta = deltas[randInt(0, deltas.length-1)] * randInt(1, 2);
+          const v = answer + sign * delta;
+          if (v > 0 && v !== answer) cand.add(v);
+        }
+        const options = shuffle(Array.from(cand)).slice(0,4);
+
+        list.push({
+          type: 'mult',
+          category: 'Multiplication 12–25 × 1–20',
+          prompt: `${a} × ${b} = ?`,
+          correct: answer,
+          options,
+          picked: null,
+          time: 0
+        });
+      }
+      return list;
+    }
+
+    function genPowersQuestions(count) {
+      const list = [];
+      let squares = 0, cubes = 0;
+      for (let i=0;i<count;i++) {
+        const chooseSquare = (squares <= cubes) ? true : Math.random() < 0.5;
+        const n = randInt(10,30);
+        let label = '';
+        let answer = 0;
+        let prompt = '';
+        if (chooseSquare) {
+          label = 'Square';
+          answer = n*n;
+          prompt = `${n}² = ?`;
+          squares++;
+        } else {
+          label = 'Cube';
+          answer = n*n*n;
+          prompt = `${n}³ = ?`;
+          cubes++;
+        }
+        const cand = new Set([answer]);
+        // near values
+        const n1 = n+1 <= 30 ? (chooseSquare ? (n+1)*(n+1) : (n+1)*(n+1)*(n+1)) : null;
+        const n2 = n-1 >= 10 ? (chooseSquare ? (n-1)*(n-1) : (n-1)*(n-1)*(n-1)) : null;
+        if (n1) cand.add(n1);
+        if (n2) cand.add(n2);
+        if (chooseSquare) {
+          cand.add(answer + n);
+          cand.add(Math.max(1, answer - n));
+        } else {
+          cand.add(answer + n*n);
+          const alt = answer - n*n;
+          if (alt > 0) cand.add(alt);
+        }
+        while (cand.size < 4) {
+          const jitter = randInt(1, chooseSquare ? 30 : 300);
+          const sign = Math.random() < 0.5 ? -1 : 1;
+          const v = answer + sign * jitter;
+          if (v > 0) cand.add(v);
+        }
+        const options = shuffle(Array.from(cand)).slice(0,4);
+        list.push({
+          type: 'power',
+          label,
+          category: 'Squares & Cubes (10–30)',
+          prompt,
+          correct: answer,
+          options,
+          picked: null,
+          time: 0
+        });
+      }
+      return list;
+    }
+
+    function buildQuiz() {
+      const mult = genMultiplicationQuestions(10);
+      const pow = genPowersQuestions(10);
+      // Keep order: first 10 mult, next 10 powers
+      questions = [...mult, ...pow].slice(0, TOTAL_QUESTIONS);
+    }
+
+    function setRingProgress(secondsLeft) {
+      const ratio = clamp(secondsLeft / PER_Q_SECONDS, 0, 1);
+      qRing.style.setProperty('--value', ratio.toFixed(4));
+      qTimer.textContent = String(secondsLeft);
+    }
+
+    function setOverallTimer(secLeft) {
+      const m = Math.floor(secLeft / 60);
+      const s = secLeft % 60;
+      overallTimerText.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      qIndexText.textContent = String(currentIndex+1);
+      sectionText.textContent = currentIndex < 10 ? 'Multiplication' : 'Squares & Cubes';
+
+      questionText.innerHTML = q.prompt;
+      optionsGrid.innerHTML = '';
+      const opts = shuffle(q.options.map((v,i)=>({v,i}))); // shuffle display order each time
+      opts.forEach((o, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option p-4 sm:p-5 text-left';
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-xl sm:text-2xl font-extrabold">${formatNum(o.v)}</div>
+            <div class="badge text-[10px]">Option ${idx+1}</div>
+          </div>
+        `;
+        btn.addEventListener('click', () => handlePick(o.v, btn));
+        optionsGrid.appendChild(btn);
+      });
+
+      const pct = Math.round(((currentIndex) / TOTAL_QUESTIONS) * 100);
+      progressBar.style.width = `${pct}%`;
+      progressPct.textContent = `${pct}%`;
+
+      // Start per-question timer
+      clearInterval(perQInterval);
+      questionStart = performance.now();
+      let lastDrawn = PER_Q_SECONDS;
+      setRingProgress(PER_Q_SECONDS);
+
+      perQInterval = setInterval(() => {
+        const elapsed = Math.floor((performance.now() - questionStart) / 1000);
+        const left = clamp(PER_Q_SECONDS - elapsed, 0, PER_Q_SECONDS);
+        if (left !== lastDrawn) {
+          setRingProgress(left);
+          lastDrawn = left;
+        }
+        if (left <= 0) {
+          clearInterval(perQInterval);
+          recordAnswer(null); // timed out
+          setTimeout(nextQuestion, 280);
+        }
+      }, 200);
+    }
+
+    function recordAnswer(selectedValue) {
+      const q = questions[currentIndex];
+      const elapsed = Math.min(PER_Q_SECONDS, Math.max(0, Math.round((performance.now() - questionStart)/1000)));
+      q.time = elapsed;
+      q.picked = selectedValue;
+    }
+
+    function handlePick(value, btnEl) {
+      recordAnswer(value);
+      // Visual feedback
+      const q = questions[currentIndex];
+      const isCorrect = value === q.correct;
+      btnEl.classList.add(isCorrect ? 'correct' : 'wrong');
+      // Slight delay before moving on
+      setTimeout(nextQuestion, 350);
+    }
+
+    function nextQuestion() {
+      if (currentIndex < TOTAL_QUESTIONS - 1) {
+        currentIndex += 1;
+        renderQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function startOverallTimer() {
+      clearInterval(quizInterval);
+      quizStart = performance.now();
+      let last = TOTAL_SECONDS;
+      setOverallTimer(TOTAL_SECONDS);
+      quizInterval = setInterval(() => {
+        const elapsed = Math.floor((performance.now() - quizStart) / 1000);
+        totalElapsed = elapsed;
+        const left = clamp(TOTAL_SECONDS - elapsed, 0, TOTAL_SECONDS);
+        if (left !== last) {
+          setOverallTimer(left);
+          last = left;
+        }
+        if (left <= 0) {
+          clearInterval(quizInterval);
+          finishQuiz();
+        }
+      }, 250);
+    }
+
+    function startQuiz() {
+      buildQuiz();
+      currentIndex = 0;
+      startOverlay.classList.add('hidden');
+      quizView.classList.remove('hidden');
+      renderQuestion();
+      startOverallTimer();
+    }
+
+    function finishQuiz() {
+      clearInterval(perQInterval);
+      clearInterval(quizInterval);
+      // If still on a question without recorded time (e.g., manual submit), capture time
+      if (questions[currentIndex] && questions[currentIndex].time === 0 && questions[currentIndex].picked === null) {
+        recordAnswer(null);
+      }
+
+      // Compute stats
+      let correct = 0;
+      const times = [];
+      let total = 0;
+      questions.forEach(q => {
+        if (q.picked === q.correct) correct++;
+        const t = q.time || 0;
+        times.push(t);
+        total += t;
+      });
+      const wrong = TOTAL_QUESTIONS - correct;
+      scoreValue.textContent = String(correct);
+      correctCountEl.textContent = String(correct);
+      wrongCountEl.textContent = String(wrong);
+      const avg = total / TOTAL_QUESTIONS;
+      avgTimeEl.textContent = avg.toFixed(1);
+      const totalM = Math.floor(total / 60);
+      const totalS = total % 60;
+      totalTimeEl.textContent = `${totalM}:${String(totalS).padStart(2,'0')}`;
+      scoreBadge.textContent = correct >= 16 ? 'Excellent' : (correct >= 12 ? 'Great' : (correct >= 8 ? 'Good' : 'Keep Practicing'));
+
+      // Swap views
+      quizView.classList.add('hidden');
+      resultView.classList.remove('hidden');
+
+      // Charts
+      drawTimeChart(times);
+      drawAccChart(correct, wrong);
+      // Ensure FS indicator updates
+      updateFSIndicator();
+      scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Charts with D3
+    function drawTimeChart(times) {
+      const el = d3.select('#timeChart');
+      el.selectAll('*').remove();
+      const rect = el.node().getBoundingClientRect();
+      const margin = { top: 10, right: 16, bottom: 28, left: 34 };
+      const width = Math.max(260, rect.width) - margin.left - margin.right;
+      const height = Math.max(180, rect.height) - margin.top - margin.bottom;
+
+      const svg = el.append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom);
+      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleLinear().domain([1, times.length]).range([0, width]);
+      const y = d3.scaleLinear().domain([0, Math.max(60, d3.max(times)||60)]).nice().range([height, 0]);
+
+      const xAxis = d3.axisBottom(x).ticks(10).tickFormat(d => `Q${d}`);
+      const yAxis = d3.axisLeft(y).ticks(6).tickFormat(d => `${d}s`);
+
+      g.append('g').attr('transform', `translate(0,${height})`).call(xAxis).selectAll('text').attr('fill', '#AFC3FF').style('font-size','.75rem');
+      g.append('g').call(yAxis).selectAll('text').attr('fill', '#AFC3FF').style('font-size','.75rem');
+      g.selectAll('.domain, .tick line').attr('stroke', 'rgba(255,255,255,0.18)');
+
+      const line = d3.line()
+        .x((d,i) => x(i+1))
+        .y(d => y(d))
+        .curve(d3.curveMonotoneX);
+
+      // Grid
+      g.append('g').attr('class','grid')
+        .call(d3.axisLeft(y).ticks(6).tickSize(-width).tickFormat(''))
+        .selectAll('line').attr('stroke','rgba(255,255,255,0.08)');
+
+      // Area under curve
+      g.append('path')
+        .datum(times)
+        .attr('fill', 'url(#grad)')
+        .attr('d', d3.area().x((d,i)=>x(i+1)).y0(y(0)).y1(d=>y(d)).curve(d3.curveMonotoneX));
+
+      // Defs gradient
+      const defs = svg.append('defs');
+      const grad = defs.append('linearGradient').attr('id','grad').attr('x1','0').attr('x2','0').attr('y1','0').attr('y2','1');
+      grad.append('stop').attr('offset','0%').attr('stop-color','rgba(0,229,255,0.25)');
+      grad.append('stop').attr('offset','100%').attr('stop-color','rgba(124,58,237,0.05)');
+
+      // Line
+      g.append('path')
+        .datum(times)
+        .attr('fill','none')
+        .attr('stroke','url(#strokeGrad)')
+        .attr('stroke-width',2.5)
+        .attr('d', line)
+        .attr('filter', 'url(#glow)');
+
+      // Stroke gradient
+      const strokeGrad = defs.append('linearGradient').attr('id','strokeGrad').attr('x1','0').attr('x2','1').attr('y1','0').attr('y2','0');
+      strokeGrad.append('stop').attr('offset','0%').attr('stop-color','#7C3AED');
+      strokeGrad.append('stop').attr('offset','50%').attr('stop-color','#00E5FF');
+      strokeGrad.append('stop').attr('offset','100%').attr('stop-color','#00FFA3');
+
+      // Glow filter
+      const filter = defs.append('filter').attr('id','glow');
+      filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
+      const feMerge = filter.append('feMerge');
+      feMerge.append('feMergeNode').attr('in','coloredBlur');
+      feMerge.append('feMergeNode').attr('in','SourceGraphic');
+
+      // Dots
+      g.selectAll('.dot')
+        .data(times)
+        .enter()
+        .append('circle')
+        .attr('class','dot')
+        .attr('cx',(d,i)=>x(i+1))
+        .attr('cy',d=>y(d))
+        .attr('r',3.2)
+        .attr('fill','#00FFA3')
+        .attr('stroke','rgba(255,255,255,0.6)')
+        .attr('stroke-width',0.5);
+    }
+
+    function drawAccChart(correct, wrong) {
+      const el = d3.select('#accChart');
+      el.selectAll('*').remove();
+      const rect = el.node().getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height) - 10;
+      const width = size, height = size, radius = size/2;
+
+      const svg = el.append('svg').attr('width', width).attr('height', height).append('g').attr('transform', `translate(${width/2},${height/2})`);
+
+      const data = [
+        { label: 'Correct', value: correct, color: '#00FFA3' },
+        { label: 'Wrong', value: wrong, color: '#FF3D81' },
+      ];
+
+      const pie = d3.pie().sort(null).value(d => d.value);
+      const arc = d3.arc().innerRadius(radius*0.6).outerRadius(radius*0.95);
+      const arcs = svg.selectAll('path').data(pie(data)).enter().append('path')
+        .attr('d', arc)
+        .attr('fill', d => d.data.color)
+        .attr('opacity', 0.9)
+        .attr('stroke', 'rgba(255,255,255,0.6)')
+        .attr('stroke-width', 0.5)
+        .style('filter','drop-shadow(0 0 12px rgba(124,58,237,.25))');
+
+      // Labels
+      const labelArc = d3.arc().innerRadius(radius*0.72).outerRadius(radius*0.72);
+      svg.selectAll('text')
+        .data(pie(data))
+        .enter()
+        .append('text')
+        .attr('transform', d => `translate(${labelArc.centroid(d)})`)
+        .attr('text-anchor','middle')
+        .attr('alignment-baseline','middle')
+        .style('font-size','12px')
+        .style('fill','#EAF2FF')
+        .text(d => `${d.data.label} (${d.data.value})`);
+    }
+
+    // Submit button handler
+    submitBtn.addEventListener('click', () => {
+      finishQuiz();
+    });
+    retryBtn.addEventListener('click', () => {
+      location.reload();
+    });
+
+    // Start button: fullscreen + start
+    startBtn.addEventListener('click', async () => {
+      await requestFS();
+      updateFSIndicator();
+      startQuiz();
+    });
+    goFSBtn.addEventListener('click', () => requestFS());
+    fsAgainBtn.addEventListener('click', () => requestFS());
+    document.addEventListener('fullscreenchange', updateFSIndicator);
+
+    // Keyboard: 1..4 select
+    document.addEventListener('keydown', (e) => {
+      if (quizView.classList.contains('hidden')) return;
+      const n = parseInt(e.key, 10);
+      if (!isNaN(n) && n >= 1 && n <= 4) {
+        const btns = $$('#optionsGrid .option');
+        const target = btns[n-1];
+        if (target) target.click();
+      }
+    });
+
+    // Responsive charts on resize
+    window.addEventListener('resize', () => {
+      if (!resultView.classList.contains('hidden')) {
+        const times = questions.map(q => q.time || 0);
+        drawTimeChart(times);
+        const correct = questions.filter(q => q.picked === q.correct).length;
+        drawAccChart(correct, TOTAL_QUESTIONS - correct);
+      }
+    });
+
+    // Kick off FS indicator state
+    updateFSIndicator();
+  </script>
 </body>
 </html>
