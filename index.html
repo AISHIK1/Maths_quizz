@@ -1,241 +1,204 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Neon Math Quiz Arena</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-/* ===== SAME CSS YOU PROVIDED (UNCHANGED UI) ===== */
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{
-  font-family:"Space Grotesk",system-ui;
-  background:radial-gradient(circle at top left,#1d1b4c 0,#020617 45%,#000 100%);
-  color:#f9fafb;
-  overflow-x:hidden;
-  touch-action:manipulation
-}
-/* --- visuals trimmed for brevity, UI stays same --- */
-.screen{display:none}
-.screen.active{display:block}
-.btn{cursor:pointer}
-.option-btn.selected{background:#22d3ee;color:#020617}
-.progress-bar-fill,.score-bar-fill{transition:width .5s ease}
-</style>
-</head>
-
-<body>
-
-<main class="app">
-
-<!-- INTRO -->
-<section id="intro-screen" class="screen active">
-  <button id="start-btn">Start Quiz (Fullscreen)</button>
-</section>
-
-<!-- QUIZ -->
-<section id="quiz-screen" class="screen">
-  <div>
-    <div id="progress-text"></div>
-    <div id="question-timer">Time left: 60s</div>
-    <div class="progress-bar"><div id="progress-fill" class="progress-bar-fill"></div></div>
-  </div>
-
-  <div id="question-text"></div>
-  <div id="options-container"></div>
-
-  <button id="prev-btn">Prev</button>
-  <button id="next-btn">Next</button>
-  <button id="submit-btn" style="display:none">Submit</button>
-</section>
-
-<!-- RESULT -->
-<section id="result-screen" class="screen">
-  <h2 id="score-main"></h2>
-  <div class="score-bar"><div id="score-fill" class="score-bar-fill"></div></div>
-  <div id="result-list"></div>
-  <button id="restart-btn">Restart</button>
-</section>
-
-</main>
-
 <script>
-/* ===================== CONFIG ===================== */
-const TOTAL_MULTIPLICATION = 10;
-const TOTAL_POWERS = 10;
-const QUESTION_TIME = 60;
+(function () {
+  "use strict";
 
-/* ===================== SEEDED RANDOM (HOURLY) ===================== */
-const HOUR_SEED = Math.floor(Date.now() / (1000 * 60 * 60));
-let randomSeed = HOUR_SEED;
+  /* ================= CONFIG ================= */
+  const TOTAL_MULTIPLICATION = 10;
+  const TOTAL_POWERS = 10;
+  const QUESTION_TIME = 60; // seconds per question
 
-function seededRand(){
-  randomSeed += 1;
-  return Math.sin(randomSeed) * 10000 % 1;
-}
-function randInt(min,max){
-  return Math.floor(seededRand()*(max-min+1))+min;
-}
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(seededRand()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
+  /* ============ HOURLY SEEDED RANDOM ============ */
+  const HOUR_SEED = Math.floor(Date.now() / (1000 * 60 * 60));
+  let seed = HOUR_SEED;
+
+  function seededRandom() {
+    seed++;
+    return Math.abs(Math.sin(seed) * 10000) % 1;
   }
-  return arr;
-}
 
-/* ===================== STATE ===================== */
-let questions=[],answers=[],currentIndex=0;
-let timer=null,timeLeft=QUESTION_TIME;
-
-/* ===================== ELEMENTS ===================== */
-const intro=document.getElementById("intro-screen");
-const quiz=document.getElementById("quiz-screen");
-const result=document.getElementById("result-screen");
-
-const startBtn=document.getElementById("start-btn");
-const prevBtn=document.getElementById("prev-btn");
-const nextBtn=document.getElementById("next-btn");
-const submitBtn=document.getElementById("submit-btn");
-
-const qText=document.getElementById("question-text");
-const options=document.getElementById("options-container");
-const progress=document.getElementById("progress-text");
-const progressFill=document.getElementById("progress-fill");
-const timerEl=document.getElementById("question-timer");
-
-const scoreMain=document.getElementById("score-main");
-const scoreFill=document.getElementById("score-fill");
-const resultList=document.getElementById("result-list");
-
-/* ===================== SECURITY ===================== */
-document.addEventListener("contextmenu",e=>e.preventDefault());
-document.addEventListener("keydown",e=>{
-  const k=e.key.toLowerCase();
-  if((e.ctrlKey||e.metaKey)&&["t","n","w","r","p"].includes(k))e.preventDefault();
-  if(["f5","f11"].includes(k))e.preventDefault();
-});
-
-/* ===================== FULLSCREEN ===================== */
-function fullscreen(){
-  const el=document.documentElement;
-  if(el.requestFullscreen)el.requestFullscreen();
-  if(screen.orientation?.lock)screen.orientation.lock("landscape").catch(()=>{});
-}
-
-/* ===================== QUESTIONS ===================== */
-function genMultiplication(){
-  const q=[];
-  while(q.length<TOTAL_MULTIPLICATION){
-    const a=randInt(12,25),b=randInt(1,20);
-    q.push({
-      text:`${a} × ${b}`,
-      correct:a*b,
-      options:shuffle([a*b,a*b+randInt(1,10),a*b-randInt(1,10),a*b+randInt(11,20)])
-    });
+  function randInt(min, max) {
+    return Math.floor(seededRandom() * (max - min + 1)) + min;
   }
-  return q;
-}
-function genPowers(){
-  const q=[];
-  while(q.length<TOTAL_POWERS){
-    const n=randInt(10,30),pow=Math.random()<.5?2:3;
-    const c=n**pow;
-    q.push({
-      text:`${n}<sup>${pow}</sup>`,
-      correct:c,
-      options:shuffle([c,c+randInt(10,50),c-randInt(10,50),c+randInt(51,100)])
-    });
-  }
-  return q;
-}
 
-/* ===================== TIMER ===================== */
-function clearTimer(){
-  if(timer)clearInterval(timer);
-}
-function startTimer(){
-  clearTimer();
-  timeLeft=QUESTION_TIME;
-  timerEl.textContent=`Time left: ${timeLeft}s`;
-  timer=setInterval(()=>{
-    timeLeft--;
-    timerEl.textContent=`Time left: ${timeLeft}s`;
-    if(timeLeft<=0){
-      clearTimer();
-      if(currentIndex<questions.length-1){
-        currentIndex++;
-        render();
-      }else{
-        submit();
-      }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-  },1000);
-}
+    return arr;
+  }
 
-/* ===================== RENDER ===================== */
-function render(){
-  const q=questions[currentIndex];
-  progress.textContent=`Question ${currentIndex+1} / ${questions.length}`;
-  progressFill.style.width=((currentIndex+1)/questions.length*100)+"%";
+  /* ================= DOM ================= */
+  const intro = document.getElementById("intro-screen");
+  const quiz = document.getElementById("quiz-screen");
+  const result = document.getElementById("result-screen");
 
-  qText.innerHTML=q.text;
-  options.innerHTML="";
-  q.options.forEach(opt=>{
-    const b=document.createElement("button");
-    b.className="option-btn";
-    b.textContent=opt;
-    if(answers[currentIndex]===opt)b.classList.add("selected");
-    b.onclick=()=>{
-      answers[currentIndex]=opt;
-      [...options.children].forEach(x=>x.classList.remove("selected"));
-      b.classList.add("selected");
-    };
-    options.appendChild(b);
+  const startBtn = document.getElementById("start-btn");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const submitBtn = document.getElementById("submit-btn");
+
+  const questionText = document.getElementById("question-text");
+  const optionsContainer = document.getElementById("options-container");
+  const progressText = document.getElementById("progress-text");
+  const progressFill = document.getElementById("progress-fill");
+  const timerEl = document.getElementById("question-timer");
+
+  const scoreMain = document.getElementById("score-main");
+  const scorePercent = document.getElementById("score-percent");
+  const scoreFill = document.getElementById("score-fill");
+  const resultList = document.getElementById("result-list");
+
+  /* ================= STATE ================= */
+  let questions = [];
+  let answers = [];
+  let index = 0;
+  let timer = null;
+  let timeLeft = QUESTION_TIME;
+
+  /* ================= FULLSCREEN ================= */
+  function requestFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    if (screen.orientation?.lock) {
+      screen.orientation.lock("landscape").catch(() => {});
+    }
+  }
+
+  /* ================= SECURITY ================= */
+  document.addEventListener("contextmenu", e => e.preventDefault());
+  document.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && ["t","n","w","r","p"].includes(k)) e.preventDefault();
+    if (["f5","f11"].includes(k)) e.preventDefault();
   });
 
-  prevBtn.disabled=currentIndex===0;
-  nextBtn.style.display=currentIndex===questions.length-1?"none":"inline";
-  submitBtn.style.display=currentIndex===questions.length-1?"inline":"none";
+  /* ================= QUESTIONS ================= */
+  function genMultiplication() {
+    const q = [];
+    while (q.length < TOTAL_MULTIPLICATION) {
+      const a = randInt(12, 25);
+      const b = randInt(1, 20);
+      q.push({
+        textHTML: `What is <span class="math">${a} × ${b}</span>?`,
+        correct: a * b,
+        options: shuffle([
+          a * b,
+          a * b + randInt(1, 10),
+          a * b - randInt(1, 10),
+          a * b + randInt(11, 20),
+        ]),
+      });
+    }
+    return q;
+  }
 
-  startTimer();
-}
+  function genPowers() {
+    const q = [];
+    while (q.length < TOTAL_POWERS) {
+      const n = randInt(10, 30);
+      const p = seededRandom() < 0.5 ? 2 : 3;
+      const c = n ** p;
+      q.push({
+        textHTML: `What is <span class="math">${n}<sup>${p}</sup></span>?`,
+        correct: c,
+        options: shuffle([
+          c,
+          c + randInt(10, 50),
+          c - randInt(10, 50),
+          c + randInt(51, 120),
+        ]),
+      });
+    }
+    return q;
+  }
 
-/* ===================== SCORE ===================== */
-function submit(){
-  clearTimer();
-  let score=0;
-  resultList.innerHTML="";
-  questions.forEach((q,i)=>{
-    if(answers[i]===q.correct)score++;
-    const d=document.createElement("div");
-    d.textContent=`Q${i+1}: ${q.text} | Your: ${answers[i]??"—"} | Correct: ${q.correct}`;
-    resultList.appendChild(d);
-  });
-  scoreMain.textContent=`${score} / ${questions.length}`;
-  scoreFill.style.width=(score/questions.length*100)+"%";
-  quiz.classList.remove("active");
-  result.classList.add("active");
-}
+  /* ================= TIMER ================= */
+  function startTimer() {
+    clearInterval(timer);
+    timeLeft = QUESTION_TIME;
+    timerEl.innerHTML = `Time left: <strong>${timeLeft}s</strong>`;
 
-/* ===================== FLOW ===================== */
-function init(){
-  questions=shuffle(genMultiplication().concat(genPowers()));
-  answers=new Array(questions.length).fill(null);
-  currentIndex=0;
-  intro.classList.remove("active");
-  quiz.classList.add("active");
-  render();
-}
+    timer = setInterval(() => {
+      timeLeft--;
+      timerEl.innerHTML = `Time left: <strong>${timeLeft}s</strong>`;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        if (index < questions.length - 1) {
+          index++;
+          render();
+        } else {
+          submit();
+        }
+      }
+    }, 1000);
+  }
 
-startBtn.onclick=()=>{fullscreen();init();};
-prevBtn.onclick=()=>{currentIndex--;render();};
-nextBtn.onclick=()=>{currentIndex++;render();};
-submitBtn.onclick=submit;
-document.getElementById("restart-btn").onclick=()=>{fullscreen();init();};
+  /* ================= RENDER ================= */
+  function render() {
+    const q = questions[index];
+    progressText.textContent = `Question ${index + 1} / ${questions.length}`;
+    progressFill.style.width = ((index + 1) / questions.length) * 100 + "%";
+
+    questionText.innerHTML = q.textHTML;
+    optionsContainer.innerHTML = "";
+
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "btn option-btn";
+      btn.textContent = opt;
+      if (answers[index] === opt) btn.classList.add("selected");
+      btn.onclick = () => {
+        answers[index] = opt;
+        [...optionsContainer.children].forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      optionsContainer.appendChild(btn);
+    });
+
+    prevBtn.disabled = index === 0;
+    nextBtn.style.display = index === questions.length - 1 ? "none" : "inline-flex";
+    submitBtn.style.display = index === questions.length - 1 ? "inline-flex" : "none";
+
+    startTimer();
+  }
+
+  /* ================= SUBMIT ================= */
+  function submit() {
+    clearInterval(timer);
+    let score = 0;
+    resultList.innerHTML = "";
+
+    questions.forEach((q, i) => {
+      if (answers[i] === q.correct) score++;
+      const div = document.createElement("div");
+      div.className = "result-item";
+      div.innerHTML = `${q.textHTML} — Your: ${answers[i] ?? "—"} | Correct: ${q.correct}`;
+      resultList.appendChild(div);
+    });
+
+    const percent = Math.round((score / questions.length) * 100);
+    scoreMain.textContent = `${score} / ${questions.length}`;
+    scorePercent.textContent = `(${percent}%)`;
+    scoreFill.style.width = percent + "%";
+
+    quiz.classList.remove("active");
+    result.classList.add("active");
+  }
+
+  /* ================= START ================= */
+  startBtn.onclick = () => {
+    requestFullscreen();
+    questions = shuffle(genMultiplication().concat(genPowers()));
+    answers = new Array(questions.length).fill(null);
+    index = 0;
+    intro.classList.remove("active");
+    quiz.classList.add("active");
+    render();
+  };
+
+  prevBtn.onclick = () => { if (index > 0) { index--; render(); } };
+  nextBtn.onclick = () => { if (index < questions.length - 1) { index++; render(); } };
+  submitBtn.onclick = submit;
+})();
 </script>
-
-</body>
-</html>
